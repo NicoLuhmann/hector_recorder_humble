@@ -26,7 +26,7 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
   bool all_flag = false;
 
   std::vector<std::string> writer_choices = { "sqlite3", "mcap" };
-  std::string default_writer = "sqlite3";
+  std::string default_writer = "mcap";
 
   float max_bag_size_gb = 0.0;
 
@@ -308,6 +308,11 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
   final_output_dir = hector_recorder::resolveOutputDirectory( output_dir );
   // custom_options.resolved_output_dir = final_output_dir;
   storage_options.uri = final_output_dir;
+  
+  // Assign storage_id to storage_options
+  if ( !storage_id.empty() ) {
+    storage_options.storage_id = storage_id;
+  }
 
   if ( all_flag ) {
     record_options.all = true;  // HUMBLE: all_topics -> all, all_services removed
