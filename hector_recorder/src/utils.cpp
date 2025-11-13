@@ -231,37 +231,39 @@ bool parseYamlConfig( CustomOptions &custom_options, rosbag2_transport::RecordOp
     } else {
       storage_options.snapshot_mode = false;
     }
-    if ( config["start_time_ns"] ) {
-      storage_options.start_time_ns = config["start_time_ns"].as<int64_t>();
-    } else {
-      storage_options.start_time_ns = -1;
-    }
-    if ( config["end_time_ns"] ) {
-      storage_options.end_time_ns = config["end_time_ns"].as<int64_t>();
-    } else {
-      storage_options.end_time_ns = -1;
-    }
-    if ( config["custom_data"] ) {
-      storage_options.custom_data.clear();
-      for ( const auto &pair : config["custom_data"] ) {
-        if ( pair.size() != 2 ) {
-          std::cerr << "Error: Custom data must be a map of key-value pairs." << std::endl;
-          return false; // Invalid custom data format
-        }
-        storage_options.custom_data[pair[0].as<std::string>()] = pair[1].as<std::string>();
-      }
-    }
+    // HUMBLE: These fields don't exist in StorageOptions
+    // if ( config["start_time_ns"] ) {
+    //   storage_options.start_time_ns = config["start_time_ns"].as<int64_t>();
+    // } else {
+    //   storage_options.start_time_ns = -1;
+    // }
+    // if ( config["end_time_ns"] ) {
+    //   storage_options.end_time_ns = config["end_time_ns"].as<int64_t>();
+    // } else {
+    //   storage_options.end_time_ns = -1;
+    // }
+    // if ( config["custom_data"] ) {
+    //   storage_options.custom_data.clear();
+    //   for ( const auto &pair : config["custom_data"] ) {
+    //     if ( pair.size() != 2 ) {
+    //       std::cerr << "Error: Custom data must be a map of key-value pairs." << std::endl;
+    //       return false;
+    //     }
+    //     storage_options.custom_data[pair[0].as<std::string>()] = pair[1].as<std::string>();
+    //   }
+    // }
 
     if ( config["all_topics"] ) {
-      record_options.all_topics = config["all_topics"].as<bool>();
+      record_options.all = config["all_topics"].as<bool>();  // HUMBLE: all_topics -> all
     } else {
-      record_options.all_topics = false;
+      record_options.all = false;
     }
-    if ( config["all_services"] ) {
-      record_options.all_services = config["all_services"].as<bool>();
-    } else {
-      record_options.all_services = false;
-    }
+    // HUMBLE: all_services doesn't exist in RecordOptions
+    // if ( config["all_services"] ) {
+    //   record_options.all_services = config["all_services"].as<bool>();
+    // } else {
+    //   record_options.all_services = false;
+    // }
     if ( config["is_discovery_disabled"] ) {
       record_options.is_discovery_disabled = config["is_discovery_disabled"].as<bool>();
     } else {
@@ -270,23 +272,24 @@ bool parseYamlConfig( CustomOptions &custom_options, rosbag2_transport::RecordOp
     if ( config["topics"] ) {
       record_options.topics = config["topics"].as<std::vector<std::string>>();
     }
-    if ( config["topic_types"] ) {
-      record_options.topic_types = config["topic_types"].as<std::vector<std::string>>();
-    }
-    if ( config["services"] ) {
-      record_options.services = config["services"].as<std::vector<std::string>>();
-    }
-    if ( config["exclude_topics"] ) {
-      record_options.exclude_topics = config["exclude_topics"].as<std::vector<std::string>>();
-    }
-    if ( config["exclude_topic_types"] ) {
-      record_options.exclude_topic_types =
-          config["exclude_topic_types"].as<std::vector<std::string>>();
-    }
-    if ( config["exclude_service_events"] ) {
-      record_options.exclude_service_events =
-          config["exclude_service_events"].as<std::vector<std::string>>();
-    }
+    // HUMBLE: These fields don't exist in RecordOptions
+    // if ( config["topic_types"] ) {
+    //   record_options.topic_types = config["topic_types"].as<std::vector<std::string>>();
+    // }
+    // if ( config["services"] ) {
+    //   record_options.services = config["services"].as<std::vector<std::string>>();
+    // }
+    // if ( config["exclude_topics"] ) {
+    //   record_options.exclude_topics = config["exclude_topics"].as<std::vector<std::string>>();
+    // }
+    // if ( config["exclude_topic_types"] ) {
+    //   record_options.exclude_topic_types =
+    //       config["exclude_topic_types"].as<std::vector<std::string>>();
+    // }
+    // if ( config["exclude_service_events"] ) {
+    //   record_options.exclude_service_events =
+    //       config["exclude_service_events"].as<std::vector<std::string>>();
+    // }
     if ( config["rmw_serialization_format"] ) {
       record_options.rmw_serialization_format = config["rmw_serialization_format"].as<std::string>();
     } else {
@@ -301,8 +304,9 @@ bool parseYamlConfig( CustomOptions &custom_options, rosbag2_transport::RecordOp
     if ( config["regex"] ) {
       record_options.regex = config["regex"].as<std::string>();
     }
-    if ( config["exclude_regex"] ) {
-      record_options.exclude_regex = config["exclude_regex"].as<std::string>();
+    // HUMBLE: exclude_regex doesn't exist, only 'exclude'
+    if ( config["exclude_regex"] || config["exclude"] ) {
+      record_options.exclude = config["exclude_regex"] ? config["exclude_regex"].as<std::string>() : config["exclude"].as<std::string>();
     }
     if ( config["node_prefix"] ) {
       record_options.node_prefix = config["node_prefix"].as<std::string>();
@@ -323,12 +327,13 @@ bool parseYamlConfig( CustomOptions &custom_options, rosbag2_transport::RecordOp
     } else {
       record_options.compression_threads = 0;
     }
-    if ( config["compression_threads_priority"] ) {
-      record_options.compression_threads_priority =
-          config["compression_threads_priority"].as<int32_t>();
-    } else {
-      record_options.compression_threads_priority = 0;
-    }
+    // HUMBLE: compression_threads_priority doesn't exist in RecordOptions
+    // if ( config["compression_threads_priority"] ) {
+    //   record_options.compression_threads_priority =
+    //       config["compression_threads_priority"].as<int32_t>();
+    // } else {
+    //   record_options.compression_threads_priority = 0;
+    // }
     if ( config["topic_qos_profile_overrides"] ) {
       // TODO: Implement topic_qos_profile_overrides parsing
       /*
@@ -415,11 +420,12 @@ bool parseYamlConfig( CustomOptions &custom_options, rosbag2_transport::RecordOp
     } else {
       record_options.use_sim_time = false;
     }
-    if ( config["disable_keyboard_controls"] ) {
-      record_options.disable_keyboard_controls = config["disable_keyboard_controls"].as<bool>();
-    } else {
-      record_options.disable_keyboard_controls = false;
-    }
+    // HUMBLE: disable_keyboard_controls doesn't exist in RecordOptions
+    // if ( config["disable_keyboard_controls"] ) {
+    //   record_options.disable_keyboard_controls = config["disable_keyboard_controls"].as<bool>();
+    // } else {
+    //   record_options.disable_keyboard_controls = false;
+    // }
     if ( config["publish_status"] ) {
       custom_options.publish_status = config["publish_status"].as<bool>();
     }

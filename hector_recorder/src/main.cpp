@@ -30,20 +30,21 @@ int main( int argc, char **argv )
     };
   }
 
-  if ( !record_options.all_topics && !record_options.all_services &&
-       record_options.topics.empty() && record_options.services.empty() &&
-       record_options.topic_types.empty() && record_options.regex.empty() ) {
+  // HUMBLE: Simplified validation - check for all, topics, or regex
+  if ( !record_options.all &&
+       record_options.topics.empty() && record_options.regex.empty() ) {
     RCLCPP_ERROR( rclcpp::get_logger( "hector_recorder.config" ),
-                  "Need to specify at least one option out of --all, --all-topics, --all-services, "
-                  "--services, --topics, --topic-types, --regex or specify them in --config" );
+                  "Need to specify at least one option out of --all, --all-topics, "
+                  "--topics, --regex or specify them in --config" );
     return 0; // Exit if no valid recording options are provided
   }
 
-  // Ensure that topics and services start with a slash
+  // Ensure that topics start with a slash
   ensureLeadingSlash( record_options.topics );
-  ensureLeadingSlash( record_options.services );
-  ensureLeadingSlash( record_options.exclude_topics );
-  ensureLeadingSlash( record_options.exclude_service_events );
+  // HUMBLE: These fields don't exist
+  // ensureLeadingSlash( record_options.services );
+  // ensureLeadingSlash( record_options.exclude_topics );
+  // ensureLeadingSlash( record_options.exclude_service_events );
 
   // Add ROS-args: Disable stdout ros logs to prevent interference with terminal UI
   std::vector<std::string> argv_storage( argv, argv + argc );

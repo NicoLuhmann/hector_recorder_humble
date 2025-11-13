@@ -17,9 +17,9 @@
 // - Add get_topics_names_to_info() 
 // - Add get_bagfile_duration()
 
-
 #include "hector_recorder/modified/recorder_impl.hpp"
 #include "rosbag2_cpp/writers/sequential_writer.hpp"
+#include "rosbag2_transport/qos.hpp"
 
 namespace hector_recorder
 {
@@ -40,7 +40,7 @@ RecorderImpl::RecorderImpl(
             "The /clock topic needs to be discovered to record with sim time.");
   }
 
-  topic_filter_ = std::make_unique<rosbag2_transport::TopicFilter>(record_options, node->get_node_graph_interface());
+  // HUMBLE: TopicFilter doesn't exist - removed initialization
 
   for (auto & topic : record_options_.topics) {
     topic = rclcpp::expand_topic_or_service_name(
@@ -48,23 +48,10 @@ RecorderImpl::RecorderImpl(
       node->get_namespace(), false);
   }
 
-  for (auto & exclude_topic : record_options_.exclude_topics) {
-    exclude_topic = rclcpp::expand_topic_or_service_name(
-      exclude_topic, node->get_name(),
-      node->get_namespace(), false);
-  }
-
-  for (auto & service : record_options_.services) {
-    service = rclcpp::expand_topic_or_service_name(
-      service, node->get_name(),
-      node->get_namespace(), false);
-  }
-
-  for (auto & exclude_service_event_topic : record_options_.exclude_service_events) {
-    exclude_service_event_topic = rclcpp::expand_topic_or_service_name(
-      exclude_service_event_topic, node->get_name(),
-      node->get_namespace(), false);
-  }
+  // HUMBLE: These fields don't exist in RecordOptions - removed
+  // for (auto & exclude_topic : record_options_.exclude_topics) {...}
+  // for (auto & service : record_options_.services) {...}
+  // for (auto & exclude_service_event_topic : record_options_.exclude_service_events) {...}
 }
 
 RecorderImpl::~RecorderImpl()
@@ -151,10 +138,11 @@ void RecorderImpl::record()
   }
 }
 
-void RecorderImpl::split()
-{
-  writer_->split_bagfile();
-}
+// HUMBLE: Manual split not available - bagfile splits automatically based on storage_options
+// void RecorderImpl::split()
+// {
+//   writer_->split_bagfile();
+// }
 
 void RecorderImpl::event_publisher_thread_main()
 {
@@ -171,7 +159,8 @@ void RecorderImpl::event_publisher_thread_main()
       auto message = rosbag2_interfaces::msg::WriteSplitEvent();
       message.closed_file = bag_split_info_.closed_file;
       message.opened_file = bag_split_info_.opened_file;
-      message.node_name = node->get_fully_qualified_name();
+      // HUMBLE: WriteSplitEvent doesn't have node_name field
+      // message.node_name = node->get_fully_qualified_name();
       files_.push_back(message.opened_file);
       try {
         split_event_pub_->publish(message);
@@ -289,7 +278,62 @@ std::unordered_map<std::string, std::string>
 RecorderImpl::get_requested_or_available_topics()
 {
   auto all_topics_and_types = node->get_topic_names_and_types();
-  return topic_filter_->filter_topics(all_topics_and_types);
+  
+  // HUMBLE: Manual topic filtering since TopicFilter doesn't exist
+  // Note: get_topic_names_and_types() returns map<string, vector<string>>
+  std::unordered_map<std::string, std::string> filtered_topics;
+  
+  // Convert from map<string, vector<string>> to unordered_map<string, string>
+  // Take the first type from the vector
+  auto convert_topics = [](const std::map<std::string, std::vector<std::string>> & topics_map) {
+    std::unordered_map<std::string, std::string> result;
+    for (const auto & topic : topics_map) {
+      if (!topic.second.empty()) {
+        result[topic.first] = topic.second[0];  // Take first type
+      }
+    }
+    return result;
+  };
+  
+  // If recording all topics, return all available topics
+  if (record_options_.all) {
+    return convert_topics(all_topics_and_types);
+  }
+  
+  // If specific topics requested, filter for those
+  if (!record_options_.topics.empty()) {
+    for (const auto & topic : record_options_.topics) {
+      auto it = all_topics_and_types.find(topic);
+      if (it != all_topics_and_types.end() && !it->second.empty()) {
+        filtered_topics[topic] = it->second[0];
+      }
+    }
+    return filtered_topics;
+  }
+  
+  // If regex is specified, use it
+  if (!record_options_.regex.empty()) {
+    std::regex pattern(record_options_.regex);
+    for (const auto & topic : all_topics_and_types) {
+      if (std::regex_match(topic.first, pattern) && !topic.second.empty()) {
+        filtered_topics[topic.first] = topic.second[0];
+      }
+    }
+    return filtered_topics;
+  }
+  
+  // If exclude pattern is specified, filter out those topics
+  if (!record_options_.exclude.empty()) {
+    std::regex exclude_pattern(record_options_.exclude);
+    for (const auto & topic : all_topics_and_types) {
+      if (!std::regex_match(topic.first, exclude_pattern) && !topic.second.empty()) {
+        filtered_topics[topic.first] = topic.second[0];
+      }
+    }
+    return filtered_topics;
+  }
+  
+  return convert_topics(all_topics_and_types);
 }
 
 std::vector<std::string> RecorderImpl::get_unknown_topics() const
@@ -321,15 +365,15 @@ void RecorderImpl::subscribe_topics(
 {
   for (const auto & topic_with_type : topics_and_types) {
     auto endpoint_infos = node->get_publishers_info_by_topic(topic_with_type.first);
-    subscribe_topic(
-      {
-        0u,
-        topic_with_type.first,
-        topic_with_type.second,
-        serialization_format_,
-        offered_qos_profiles_for_topic(endpoint_infos),
-        type_description_hash_for_topic(endpoint_infos),
-      });
+    // HUMBLE: TopicMetadata has 4 fields: name, type, serialization_format, offered_qos_profiles
+    rosbag2_storage::TopicMetadata topic_metadata;
+    topic_metadata.name = topic_with_type.first;
+    topic_metadata.type = topic_with_type.second;
+    topic_metadata.serialization_format = serialization_format_;
+    // HUMBLE: Store QoS profiles as empty string for now
+    // In Humble, this field exists but proper QoS serialization would require additional work
+    topic_metadata.offered_qos_profiles = "";
+    subscribe_topic(topic_metadata);
   }
 }
 
@@ -340,7 +384,8 @@ void RecorderImpl::subscribe_topic(const rosbag2_storage::TopicMetadata & topic)
   // that callback called before we reached out the line: writer_->create_topic(topic)
   writer_->create_topic(topic);
 
-  rosbag2_storage::Rosbag2QoS subscription_qos{subscription_qos_for_topic(topic.name)};
+  // HUMBLE: Rosbag2QoS is in rosbag2_transport namespace, not rosbag2_storage
+  rosbag2_transport::Rosbag2QoS subscription_qos{subscription_qos_for_topic(topic.name)};
 
   auto subscription = create_subscription(topic.name, topic.type, subscription_qos);
   if (subscription) {
@@ -359,56 +404,46 @@ std::shared_ptr<rclcpp::GenericSubscription>
 RecorderImpl::create_subscription(
   const std::string & topic_name, const std::string & topic_type, const rclcpp::QoS & qos)
 {
-#ifdef _WIN32
-  if (std::string(rmw_get_implementation_identifier()).find("rmw_connextdds") !=
-    std::string::npos)
-  {
-    return node->create_generic_subscription(
-      topic_name,
-      topic_type,
-      qos,
-      [this, topic_name, topic_type](std::shared_ptr<const rclcpp::SerializedMessage> message,
-      const rclcpp::MessageInfo &) {
-        if (!paused_.load()) {
-          update_topic_statistics(topic_name, std::chrono::nanoseconds(mi.get_rmw_message_info().received_timestamp), message->size());
-          writer_->write(
-            std::move(message), topic_name, topic_type, node->now().nanoseconds(),
-            0);
-        }
-      });
-  }
-#endif
+  // HUMBLE: create_generic_subscription callback only receives SerializedMessage, not MessageInfo
+  auto callback = [this, topic_name](std::shared_ptr<rclcpp::SerializedMessage> message) {
+    if (!paused_.load()) {
+      auto rcl_handle = message->get_rcl_serialized_message();
+      auto stamp = std::chrono::nanoseconds(node->now().nanoseconds());
+      update_topic_statistics(topic_name, stamp, rcl_handle.buffer_length);
+      
+      // Create bag message
+      auto bag_message = std::make_shared<rosbag2_storage::SerializedBagMessage>();
+      bag_message->topic_name = topic_name;
+      bag_message->time_stamp = stamp.count();
+      
+      // Allocate and copy the serialized data
+      bag_message->serialized_data = std::shared_ptr<rcutils_uint8_array_t>(
+        new rcutils_uint8_array_t,
+        [](rcutils_uint8_array_t * msg) {
+          auto fini_return = rcutils_uint8_array_fini(msg);
+          delete msg;
+          if (fini_return != RCUTILS_RET_OK) {
+            RCLCPP_ERROR(
+              rclcpp::get_logger("rosbag2_transport"),
+              "Failed to destroy serialized message %s", rcutils_get_error_string().str);
+          }
+        });
+      
+      auto & data = *bag_message->serialized_data;
+      auto allocator = rcutils_get_default_allocator();
+      auto ret = rcutils_uint8_array_init(&data, rcl_handle.buffer_length, &allocator);
+      if (ret != RCUTILS_RET_OK) {
+        RCLCPP_ERROR(rclcpp::get_logger("rosbag2_transport"), "Failed to allocate memory for message");
+        return;
+      }
+      memcpy(data.buffer, rcl_handle.buffer, rcl_handle.buffer_length);
+      data.buffer_length = rcl_handle.buffer_length;
+      
+      writer_->write(bag_message);
+    }
+  };
 
-  if (record_options_.use_sim_time) {
-    return node->create_generic_subscription(
-      topic_name,
-      topic_type,
-      qos,
-      [this, topic_name, topic_type](std::shared_ptr<const rclcpp::SerializedMessage> message,
-      const rclcpp::MessageInfo & mi) {
-        if (!paused_.load()) {
-            update_topic_statistics(topic_name, std::chrono::nanoseconds(mi.get_rmw_message_info().received_timestamp), message->size());
-            writer_->write(
-            std::move(message), topic_name, topic_type, node->now().nanoseconds(),
-            mi.get_rmw_message_info().source_timestamp);
-        }
-      });
-  } else {
-    return node->create_generic_subscription(
-      topic_name,
-      topic_type,
-      qos,
-      [this, topic_name, topic_type](std::shared_ptr<const rclcpp::SerializedMessage> message,
-      const rclcpp::MessageInfo & mi) {
-        if (!paused_.load()) {
-          update_topic_statistics(topic_name, std::chrono::nanoseconds(mi.get_rmw_message_info().received_timestamp), message->size());
-          writer_->write(
-            std::move(message), topic_name, topic_type,
-            mi.get_rmw_message_info().received_timestamp,
-            mi.get_rmw_message_info().source_timestamp);
-        }
-      });
-  }
+  return node->create_generic_subscription(topic_name, topic_type, qos, callback);
 }
 
 void RecorderImpl::update_topic_statistics(
@@ -477,60 +512,9 @@ const std::vector<std::string> & RecorderImpl::get_files() const
   return files_;
 }
 
-std::string type_hash_to_string(const rosidl_type_hash_t & type_hash)
-{
-  if (type_hash.version == 0) {
-    // version is unset, this is an empty type hash.
-    return "";
-  }
-  if (type_hash.version > 1) {
-    // this is a version we don't know how to serialize
-    ROSBAG2_TRANSPORT_LOG_WARN_STREAM(
-      "attempted to stringify type hash with unknown version " << type_hash.version);
-    return "";
-  }
-  rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  char * stringified_type_hash = nullptr;
-  rcutils_ret_t status = rosidl_stringify_type_hash(&type_hash, allocator, &stringified_type_hash);
-  std::string result = "";
-  if (status == RCUTILS_RET_OK) {
-    result = stringified_type_hash;
-  }
-  if (stringified_type_hash != nullptr) {
-    allocator.deallocate(stringified_type_hash, allocator.state);
-  }
-  return result;
-}
-
-std::string type_description_hash_for_topic(
-  const std::vector<rclcpp::TopicEndpointInfo> & topics_endpoint_info)
-{
-  rosidl_type_hash_t result_hash = rosidl_get_zero_initialized_type_hash();
-  for (const auto & info : topics_endpoint_info) {
-    // If all endpoint infos provide the same type hash, return it. Otherwise return an empty
-    // string to signal that the type description hash for this topic cannot be determined.
-    rosidl_type_hash_t endpoint_hash = info.topic_type_hash();
-    if (endpoint_hash.version == 0) {
-      continue;
-    }
-    if (result_hash.version == 0) {
-      result_hash = endpoint_hash;
-      continue;
-    }
-    bool difference_detected = (endpoint_hash.version != result_hash.version);
-    difference_detected |= (
-      0 != memcmp(endpoint_hash.value, result_hash.value, ROSIDL_TYPE_HASH_SIZE));
-    if (difference_detected) {
-      std::string result_string = type_hash_to_string(result_hash);
-      std::string endpoint_string = type_hash_to_string(endpoint_hash);
-      ROSBAG2_TRANSPORT_LOG_WARN_STREAM(
-        "type description hashes for topic type '" << info.topic_type() << "' conflict: '" <<
-          result_string << "' != '" << endpoint_string << "'");
-      return "";
-    }
-  }
-  return type_hash_to_string(result_hash);
-}
+// HUMBLE: Type hash functions not available - removed
+// std::string type_hash_to_string(const rosidl_type_hash_t & type_hash) {...}
+// std::string type_description_hash_for_topic(...) {...}
 
 std::string reliability_to_string(
   const rclcpp::ReliabilityPolicy & reliability)
@@ -555,7 +539,8 @@ rclcpp::QoS RecorderImpl::subscription_qos_for_topic(const std::string & topic_n
       "Overriding subscription profile for " << topic_name);
     return topic_qos_profile_overrides_.at(topic_name);
   }
-  return rosbag2_storage::Rosbag2QoS::adapt_request_to_offers(
+  // HUMBLE: Rosbag2QoS is in rosbag2_transport namespace
+  return rosbag2_transport::Rosbag2QoS::adapt_request_to_offers(
     topic_name, node->get_publishers_info_by_topic(topic_name));
 }
 

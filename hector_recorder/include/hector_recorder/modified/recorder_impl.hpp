@@ -15,6 +15,15 @@
 // Changelog Jonathan Lichtenfeld 12.6.2024:
 // - Extract RecorderImpl from rosbag2_transport/recorder.cpp to its own file
 // - Add get_topics_info(), get_bagfile_duration()
+//
+// HUMBLE PORT CHANGES (removed features not available in Humble API):
+// - Removed service_utils.hpp include (service recording not in Humble)
+// - Removed split_bagfile service interface (manual split not available)
+// - Removed rosbag2_storage/qos.hpp (moved to rosbag2_transport in Humble)
+// - Removed config_options_from_node_params.hpp include
+// - Removed topic_filter.hpp and TopicFilter class (manual filtering implemented)
+// - Removed split() method (no manual bagfile splitting in Humble)
+// - Removed type_hash functions (type introspection limited in Humble)
 
 
 #include <algorithm>
@@ -31,28 +40,31 @@
 
 #include "rclcpp/logging.hpp"
 #include "rclcpp/clock.hpp"
+#include "rclcpp/qos.hpp"
 
 #include "rmw/types.h"
 
 #include "rosbag2_cpp/bag_events.hpp"
 #include "rosbag2_cpp/writer.hpp"
-#include "rosbag2_cpp/service_utils.hpp"
+// REMOVED FOR HUMBLE: #include "rosbag2_cpp/service_utils.hpp" (service recording not available)
 
 #include "rosbag2_interfaces/srv/is_paused.hpp"
 #include "rosbag2_interfaces/srv/pause.hpp"
 #include "rosbag2_interfaces/srv/resume.hpp"
 #include "rosbag2_interfaces/srv/snapshot.hpp"
-#include "rosbag2_interfaces/srv/split_bagfile.hpp"
+// REMOVED FOR HUMBLE: #include "rosbag2_interfaces/srv/split_bagfile.hpp" (manual split not available)
 
 #include "rosbag2_interfaces/msg/write_split_event.hpp"
 
 #include "rosbag2_storage/yaml.hpp"
-#include "rosbag2_storage/qos.hpp"
+#include "rosbag2_storage/storage_options.hpp"
+// REMOVED FOR HUMBLE: #include "rosbag2_storage/qos.hpp" (moved to rosbag2_transport namespace)
 
 #include "logging.hpp"
-#include "rosbag2_transport/config_options_from_node_params.hpp"
-#include "rosbag2_transport/topic_filter.hpp"
+// REMOVED FOR HUMBLE: #include "rosbag2_transport/config_options_from_node_params.hpp"
+// REMOVED FOR HUMBLE: #include "rosbag2_transport/topic_filter.hpp" (using manual filtering instead)
 #include "rosbag2_transport/visibility_control.hpp"
+#include "rosbag2_transport/record_options.hpp"
 
 #include "hector_recorder/topic_information.hpp"
 
@@ -77,7 +89,7 @@ public:
   /// The record() can be called again after stop().
   void stop();
 
-  void split();
+  // REMOVED FOR HUMBLE: void split(); (manual bagfile splitting not available in Humble API)
 
   const rosbag2_cpp::Writer & get_writer_handle();
 
@@ -129,18 +141,11 @@ private:
 
   void update_topic_statistics(const std::string & topic_name, std::chrono::nanoseconds stamp, int size);
 
-  /**
-   * Find the QoS profile that should be used for subscribing.
-   *
-   * Uses the override from record_options, if it is specified for this topic.
-   * Otherwise, falls back to Rosbag2QoS::adapt_request_to_offers
-   *
-   *   \param topic_name The full name of the topic, with namespace (ex. /arm/joint_status).
-   *   \return The QoS profile to be used for subscribing.
-   */
+  // REMOVED FOR HUMBLE: Detailed documentation comments (functionality unchanged)
+  // Uses override from record_options if specified, otherwise falls back to Rosbag2QoS::adapt_request_to_offers
   rclcpp::QoS subscription_qos_for_topic(const std::string & topic_name) const;
 
-  // Get all currently offered QoS profiles for a topic.
+  // REMOVED FOR HUMBLE: Comment "Get all currently offered QoS profiles for a topic"
   std::vector<rclcpp::QoS> offered_qos_profiles_for_topic(
     const std::vector<rclcpp::TopicEndpointInfo> & topics_endpoint_info) const;
 
@@ -148,9 +153,13 @@ private:
 
   void event_publisher_thread_main();
   bool event_publisher_thread_should_wake();
+  
+  // HUMBLE: Helper for manual topic filtering (replaces TopicFilter class)
+  bool should_record_topic(const std::string & topic_name) const;
 
   rclcpp::Node * node;
-  std::unique_ptr<rosbag2_transport::TopicFilter> topic_filter_;
+  // REMOVED FOR HUMBLE: std::unique_ptr<rosbag2_transport::TopicFilter> topic_filter_;
+  // TopicFilter class doesn't exist in Humble - using manual filtering with should_record_topic() instead
   std::future<void> discovery_future_;
   std::string serialization_format_;
   std::unordered_map<std::string, rclcpp::QoS> topic_qos_profile_overrides_;
@@ -178,10 +187,11 @@ private:
   std::vector<std::string> files_;
 };
 
-std::string type_hash_to_string(const rosidl_type_hash_t & type_hash);
-// Retrieve the type description hash from endpoint info.
-std::string type_description_hash_for_topic(
-  const std::vector<rclcpp::TopicEndpointInfo> & topics_endpoint_info);
+// REMOVED FOR HUMBLE: Type hash functions not available
+// std::string type_hash_to_string(const rosidl_type_hash_t & type_hash);
+// std::string type_description_hash_for_topic(
+//   const std::vector<rclcpp::TopicEndpointInfo> & topics_endpoint_info);
+
 std::string reliability_to_string(
   const rclcpp::ReliabilityPolicy & reliability);
 

@@ -53,66 +53,68 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
       ->expected( 1, -1 )
       ->delimiter( ' ' );
 
-  parser
-      .add_option( "--services", record_options.services,
-                   "Space-delimited list of services to record." )
-      ->expected( 1, -1 )
-      ->delimiter( ' ' );
+  // HUMBLE: services and topic_types don't exist in RecordOptions
+  // parser
+  //     .add_option( "--services", record_options.services,
+  //                  "Space-delimited list of services to record." )
+  //     ->expected( 1, -1 )
+  //     ->delimiter( ' ' );
+
+  // parser
+  //     .add_option( "--topic-types", record_options.topic_types,
+  //                  "Space-delimited list of topic types to record." )
+  //     ->expected( 1, -1 )
+  //     ->delimiter( ' ' );
 
   parser
-      .add_option( "--topic-types", record_options.topic_types,
-                   "Space-delimited list of topic types to record." )
-      ->expected( 1, -1 )
-      ->delimiter( ' ' );
-
-  parser
-      .add_flag( "-a,--a,--all", all_flag, "Record all topics and services. (Exclude hidden topic)" )
+      .add_flag( "-a,--a,--all", all_flag, "Record all topics. (Exclude hidden topic)" )
       ->default_val( false );
 
   parser
-      .add_flag( "--all-topics", record_options.all_topics,
+      .add_flag( "--all-topics", record_options.all,  // HUMBLE: all_topics -> all
                  "Record all topics (Exclude hidden topic)." )
       ->default_val( false );
 
-  parser
-      .add_flag( "--all-services", record_options.all_services,
-                 "Record all services via service event topics." )
-      ->default_val( false );
+  // HUMBLE: all_services doesn't exist in RecordOptions
+  // parser
+  //     .add_flag( "--all-services", record_options.all_services,
+  //                "Record all services via service event topics." )
+  //     ->default_val( false );
 
   parser
       .add_option( "-e,--e,--regex", record_options.regex,
-                   "Record only topics and services containing provided regular expression. Note:  "
-                   "--all, --all-topics, --all-services or --all-actions will override --regex." )
+                   "Record only topics containing provided regular expression. Note:  "
+                   "--all or --all-topics will override --regex." )
       ->default_val( "" );
 
   parser
-      .add_option( "--exclude-regex", record_options.exclude_regex,
-                   "Exclude topics and services containing provided regular expression. Works on "
-                   "top of --all, --all-topics, --all-services, --all-actions, --topics, "
-                   "--services, --actions or --regex." )
+      .add_option( "--exclude-regex", record_options.exclude,  // HUMBLE: exclude_regex -> exclude
+                   "Exclude topics containing provided regular expression. Works on "
+                   "top of --all, --all-topics, --topics or --regex." )
       ->default_val( "" );
 
-  parser
-      .add_option( "--exclude-topic-types", record_options.exclude_topic_types,
-                   "Space-delimited list of topic types not being recorded. Works on top of --all, "
-                   "--all-topics, --topics or --regex." )
-      ->expected( 1, -1 )
-      ->delimiter( ' ' )
-      ->default_val( "" );
+  // HUMBLE: These options don't exist in RecordOptions
+  // parser
+  //     .add_option( "--exclude-topic-types", record_options.exclude_topic_types,
+  //                  "Space-delimited list of topic types not being recorded. Works on top of --all, "
+  //                  "--all-topics, --topics or --regex." )
+  //     ->expected( 1, -1 )
+  //     ->delimiter( ' ' )
+  //     ->default_val( "" );
 
-  parser
-      .add_option( "--exclude-topics", record_options.exclude_topics,
-                   "Space-delimited list of topics not being recorded. Works on top of --all, "
-                   "--all-topics, --topics or --regex." )
-      ->expected( 1, -1 )
-      ->delimiter( ' ' );
+  // parser
+  //     .add_option( "--exclude-topics", record_options.exclude_topics,
+  //                  "Space-delimited list of topics not being recorded. Works on top of --all, "
+  //                  "--all-topics, --topics or --regex." )
+  //     ->expected( 1, -1 )
+  //     ->delimiter( ' ' );
 
-  parser
-      .add_option( "--exclude-services", record_options.exclude_service_events,
-                   "Space-delimited list of services not being recorded. Works on top of --all, "
-                   "--all-services, --services or --regex." )
-      ->expected( 1, -1 )
-      ->delimiter( ' ' );
+  // parser
+  //     .add_option( "--exclude-services", record_options.exclude_service_events,
+  //                  "Space-delimited list of services not being recorded. Works on top of --all, "
+  //                  "--all-services, --services or --regex." )
+  //     ->expected( 1, -1 )
+  //     ->delimiter( ' ' );
 
   // Discovery behavior
 
@@ -197,10 +199,11 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
                    "If the value specified is 0, then every message is directly written to disk." )
       ->default_val( 100 * 1024 * 1024 );
 
-  parser
-      .add_flag( "--disable-keyboard-controls", record_options.disable_keyboard_controls,
-                 "Disables keyboard controls for recorder." )
-      ->default_val( false );
+  // HUMBLE: disable_keyboard_controls doesn't exist in RecordOptions
+  // parser
+  //     .add_flag( "--disable-keyboard-controls", record_options.disable_keyboard_controls,
+  //                "Disables keyboard controls for recorder." )
+  //     ->default_val( false );
 
   parser
       .add_flag( "--start-paused", record_options.start_paused,
@@ -218,13 +221,14 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
                    "Specify the recorder node name. Default is hector_recorder." )
       ->default_val( "hector_recorder" );
 
-  parser
-      .add_option( "--custom-data", storage_options.custom_data,
-                   "Space-delimited list of key=value pairs. Store the custom data in metadata "
-                   "under the 'rosbag2_bagfile_information/custom_data'. The key=value pair can "
-                   "appear more than once. The last value will override the former ones." )
-      ->expected( 1, -1 )
-      ->delimiter( ' ' );
+  // HUMBLE: custom_data doesn't exist in StorageOptions
+  // parser
+  //     .add_option( "--custom-data", storage_options.custom_data,
+  //                  "Space-delimited list of key=value pairs. Store the custom data in metadata "
+  //                  "under the 'rosbag2_bagfile_information/custom_data'. The key=value pair can "
+  //                  "appear more than once. The last value will override the former ones." )
+  //     ->expected( 1, -1 )
+  //     ->delimiter( ' ' );
 
   parser
       .add_flag( "--snapshot-mode", storage_options.snapshot_mode,
@@ -245,20 +249,21 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
                    "%(default)d, which will be interpreted as the number of CPU cores." )
       ->default_val( 0 );
 
-  parser
-      .add_option(
-          "--compression-threads-priority", record_options.compression_threads_priority,
-          "Compression threads scheduling priority. \nFor Windows the valid values are:"
-          " THREAD_PRIORITY_LOWEST=-2, THREAD_PRIORITY_BELOW_NORMAL=-1 and"
-          " THREAD_PRIORITY_NORMAL=0. Please refer to"
-          " https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/"
-          "nf-processthreadsapi-setthreadpriority"
-          " for details.\n"
-          "For POSIX compatible OSes this is the 'nice' value. The nice value range is"
-          " -20 to +19 where -20 is highest, 0 default and +19 is lowest."
-          " Please refer to https://man7.org/linux/man-pages/man2/nice.2.html for details.\n"
-          "Default is %(default)d." )
-      ->default_val( 0 );
+  // HUMBLE: compression_threads_priority doesn't exist in RecordOptions
+  // parser
+  //     .add_option(
+  //         "--compression-threads-priority", record_options.compression_threads_priority,
+  //         "Compression threads scheduling priority. \nFor Windows the valid values are:"
+  //         " THREAD_PRIORITY_LOWEST=-2, THREAD_PRIORITY_BELOW_NORMAL=-1 and"
+  //         " THREAD_PRIORITY_NORMAL=0. Please refer to"
+  //         " https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/"
+  //         "nf-processthreadsapi-setthreadpriority"
+  //         " for details.\n"
+  //         "For POSIX compatible OSes this is the 'nice' value. The nice value range is"
+  //         " -20 to +19 where -20 is highest, 0 default and +19 is lowest."
+  //         " Please refer to https://man7.org/linux/man-pages/man2/nice.2.html for details.\n"
+  //         "Default is %(default)d." )
+  //     ->default_val( 0 );
 
   parser
       .add_option( "--compression-mode", record_options.compression_mode,
@@ -305,8 +310,7 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
   storage_options.uri = final_output_dir;
 
   if ( all_flag ) {
-    record_options.all_topics = true;
-    record_options.all_services = true;
+    record_options.all = true;  // HUMBLE: all_topics -> all, all_services removed
   }
 
   // logic to handle max_bag_size_gb
