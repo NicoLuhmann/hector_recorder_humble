@@ -17,21 +17,15 @@ _bag_recorder_completion() {
       prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
 
-    # List of all args for the command.
+    # List of all args for the command (only supported options in Humble)
     opts=(
         -o --output
         -s --storage
         -t --topics
-        --services
-        --topic-types
         -a --all
         --all-topics
-        --all-services
         -e --regex
         --exclude-regex
-        --exclude-topic-types
-        --exclude-topics
-        --exclude-services
         --include-unpublished-topics
         --include-hidden-topics
         --no-discovery
@@ -43,15 +37,12 @@ _bag_recorder_completion() {
         --gb --max-bag-size-gb
         -d --max-bag-duration
         --max-cache-size
-        --disable-keyboard-controls
         --start-paused
         --use-sim-time
         --node-name
-        --custom-data
         --snapshot-mode
         --compression-queue-size
         --compression-threads
-        --compression-threads-priority
         --compression-mode
         --compression-format
         -c --config
@@ -63,7 +54,7 @@ _bag_recorder_completion() {
     # Options that accept multiple values
     is_multi_value_option() {
         case "$1" in
-            -t|--topics|--exclude-topics|--services|--exclude-services|--topic-types|--exclude-topic-types)
+            -t|--topics)
                 return 0 ;;
             *) return 1 ;;
         esac
@@ -102,16 +93,8 @@ _bag_recorder_completion() {
 
     # Completions for multi-value options
     case "$current_option" in
-        -t|--topics|--exclude-topics)
+        -t|--topics)
             COMPREPLY=( $(compgen -W "$(ros2 topic list 2>/dev/null)" -- "$cur") )
-            return 0
-            ;;
-        --services|--exclude-services)
-            COMPREPLY=( $(compgen -W "$(ros2 service list 2>/dev/null)" -- "$cur") )
-            return 0
-            ;;
-        --topic-types|--exclude-topic-types)
-            COMPREPLY=( $(compgen -W "$(ros2 topic list -t 2>/dev/null | awk '{print $2}' | sort -u)" -- "$cur") )
             return 0
             ;;
     esac
