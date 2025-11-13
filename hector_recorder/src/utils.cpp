@@ -1,4 +1,5 @@
 #include "hector_recorder/utils.h"
+#include <cstdlib>
 #include <filesystem>
 
 namespace hector_recorder
@@ -194,7 +195,9 @@ bool parseYamlConfig( CustomOptions &custom_options, rosbag2_transport::RecordOp
     if ( config["output"] ) {
       storage_options.uri = resolveOutputDirectory( config["output"].as<std::string>() );
     } else {
-      storage_options.uri = resolveOutputDirectory( "" ); // Default to current working directory
+      // If not specified, use same logic as command-line (checks ROSBAGS_DIR env var)
+      const char* env_dir = std::getenv( "ROSBAGS_DIR" );
+      storage_options.uri = resolveOutputDirectory( env_dir ? env_dir : "" );
     }
     if ( config["storage_id"] ) {
       storage_options.storage_id = config["storage_id"].as<std::string>();

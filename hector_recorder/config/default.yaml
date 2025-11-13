@@ -2,6 +2,8 @@
 # Note: Some options from Jazzy/Rolling are not available in Humble
 
 node_name: "hector_recorder"  
+# Output directory for recordings
+# If not specified, uses $ROSBAGS_DIR environment variable if set, otherwise current directory
 output: "/home/user/bags" 
 storage_id: "mcap"              
 #max_bag_size: 0           

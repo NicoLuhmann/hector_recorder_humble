@@ -4,6 +4,13 @@
 
 > **Note:** This is a port of hector_recorder for ROS 2 Humble. Some features available in the original Jazzy/Rolling version are not supported due to API limitations in Humble. See [Humble Limitations](#humble-limitations) for details.
 
+## Changes from Original
+
+This fork includes the following customizations:
+
+- **Default storage format:** Changed from `sqlite3` to `mcap` for better performance and compatibility
+- **Custom default output directory:** Supports `ROSBAGS_DIR` environment variable to set a default recording location across different machines (falls back to current working directory if not set)
+
 A terminal UI for recording ROS2 bags (strongly inspired by [rosbag_fancy](https://github.com/xqms/rosbag_fancy)).
 
 Some of its features:
@@ -121,7 +128,8 @@ All arguments can be specified either via command line or in a config file.
 Example (Humble-compatible):
 ```yaml
 node_name: "my_node_name"     # defaults to 'hector_recorder'
-output: "/tmp/bags"           # will be normalized, timestamp subdir if directory
+output: "/tmp/bags"           # absolute path to output directory
+# output:                     # if omitted entirely, uses $ROSBAGS_DIR env var (if set) or current directory
 all_topics: true              # record all topics (ROS 2 Humble uses 'all_topics' or 'all')
 # Or specify specific topics:
 # topics: 
@@ -133,16 +141,33 @@ regex: ""                     # optional: regex pattern for topic names
 exclude: ""                   # optional: exclude pattern (replaces exclude_regex in Humble)
 ```
 
+**Note:** If the `output` field is **completely omitted** from the config file, it will use the `ROSBAGS_DIR` environment variable if set, otherwise the current working directory.
+
 **Note for Humble:** In the config file, use `all_topics: true` which will be mapped to the Humble API's `all` field. Service recording and advanced exclusion options are not available.
 
 See here for all available parameters and their default values:
 [hector_recorder/config/default.yaml](hector_recorder/config/default.yaml)
 
 ### Directory resolution
-- If ```--output/-o``` is not specified, a timestamped folder in the current directory is created.
+- If ```--output/-o``` is not specified, a timestamped folder will be created in:
+  - The directory specified by the `ROSBAGS_DIR` environment variable (if set), or
+  - The current working directory (if `ROSBAGS_DIR` is not set)
 - ```-o some_dir``` creates ```some_dir``` (works with absolute/relative paths)
 - If you want to have timestamped bag files in a specified log dir (useful for automatic logging), you can append a slash:  
   ```-o some_dir/``` creates ```some_dir/rosbag_<stamp>```
+
+**Setting a custom default directory:**
+
+You can set the `ROSBAGS_DIR` environment variable to change the default output location:
+
+```bash
+# In your shell profile (~/.bashrc, ~/.zshrc, etc.):
+export ROSBAGS_DIR="/workspace/rosbags"
+
+# Or set it per-session:
+export ROSBAGS_DIR="/my/custom/path"
+bag_recorder --topics /tf /odom
+```
 
 ### TODOs
 - [ ] Add/test qos-profile-overrides-path

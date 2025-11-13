@@ -3,6 +3,7 @@
 #include "CLI11.hpp"
 #include "rosbag2_storage/storage_options.hpp"
 #include "rosbag2_transport/record_options.hpp"
+#include <cstdlib>
 #include <string>
 
 #include <hector_recorder/utils.h>

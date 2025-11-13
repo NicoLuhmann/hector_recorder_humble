@@ -30,6 +30,15 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
 
   float max_bag_size_gb = 0.0;
 
+  // Get default output directory from environment variable or use empty string
+  std::string default_output_dir;
+  const char* env_output = std::getenv("ROSBAGS_DIR");
+  if (env_output != nullptr) {
+    default_output_dir = env_output;
+  } else {
+    default_output_dir = "";
+  }
+
   argv = parser.ensure_utf8( argv );
 
   // Create a group for all manual options
@@ -39,8 +48,8 @@ void ArgParser::parseCommandLineArguments( int argc, char **argv, CustomOptions 
   parser
       .add_option(
           "-o,--output",
-          output_dir, "Destination of the bagfile to create, defaults to a timestamped folder in the current directory." )
-      ->default_val( "" );
+          output_dir, "Destination of the bagfile to create, defaults to a timestamped folder in the current directory (or $ROSBAGS_DIR if set)." )
+      ->default_val( default_output_dir );
 
   parser
       .add_option( "-s,--storage", storage_id,
